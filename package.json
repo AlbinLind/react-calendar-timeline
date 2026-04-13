@@ -1,7 +1,7 @@
 {
-  "name": "react-calendar-timeline",
+  "name": "dash-react-calendar-timeline",
   "version": "0.30.0-rc.1",
-  "description": "react-calendar-timeline",
+  "description": "for of react-calendar-timeline",
   "packageManager": "npm@10.1.0",
   "scripts": {
     "build": "npm run clean && tsc && vite build",
@@ -34,10 +34,10 @@
   "files": [
     "dist"
   ],
-  "homepage": "https://github.com/namespace-ee/react-calendar-timeline",
+  "homepage": "https://github.com/AlbinLind/react-calendar-timeline",
   "repository": {
     "type": "git",
-    "url": "https://github.com/namespace-ee/react-calendar-timeline.git"
+    "url": "https://github.com/AlbinLind/react-calendar-timeline.git"
   },
   "private": false,
   "author": "Marius Andra <marius.andra@gmail.com>",
