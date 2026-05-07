@@ -3,10 +3,10 @@ import {
   createRef,
   CSSProperties,
   HTMLAttributes,
-  LegacyRef,
   MouseEvent,
   MouseEventHandler,
   ReactNode,
+  Ref,
   TouchEvent,
   TouchEventHandler,
 } from "react";
@@ -111,11 +111,11 @@ export interface ItemRendererProps<CustomItem extends TimelineItemBase<number>> 
   itemContext: ItemContext;
   getItemProps: (
     params: GetItemPropsParams
-  ) => HTMLAttributes<HTMLDivElement> & { key: string; ref: LegacyRef<HTMLDivElement> };
+  ) => HTMLAttributes<HTMLDivElement> & { key: string; ref: Ref<HTMLDivElement> };
   getResizeProps: GetResizeProps;
 }
 type GetResizePropsDirection = {
-  ref: LegacyRef<HTMLDivElement>;
+  ref: Ref<HTMLDivElement>;
   className: string;
   style: CSSProperties;
 };

@@ -1,4 +1,4 @@
-import React, { ReactNode, LegacyRef, CSSProperties } from "react";
+import React, { ReactNode, Ref, CSSProperties } from "react";
 import classNames from "classnames";
 import { useTimelineHeadersContext } from "./HeadersContext";
 import SidebarHeader from "./SidebarHeader";
@@ -6,7 +6,7 @@ import { RIGHT_VARIANT } from "./constants";
 import { ElementWithSecret } from "../types/main";
 
 export type TimelineHeadersProps = {
-  registerScroll: LegacyRef<HTMLDivElement>;
+  registerScroll: Ref<HTMLDivElement>;
   leftSidebarWidth: number;
   rightSidebarWidth: number;
   scrollOffset: number;
