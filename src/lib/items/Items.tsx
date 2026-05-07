@@ -37,6 +37,7 @@ type ItemsProps<CustomItem extends TimelineItemBase<number>> = {
   groupTops: number[];
   useResizeHandle?: boolean;
   scrollRef: HTMLElement | null;
+  timezone?: string;
   scrollOffset: number;
 };
 
@@ -136,6 +137,7 @@ export default class Items<CustomItem extends TimelineItemBase<number>> extends 
               onSelect={this.props.itemSelect}
               itemRenderer={this.props.itemRenderer}
               scrollRef={this.props.scrollRef}
+              timezone={this.props.timezone}
               scrollOffset={this.props.scrollOffset}
             />
           ))}

@@ -22,6 +22,7 @@ export type CustomHeaderProps<Data> = {
   getLeftOffsetFromDate: (date: number) => number;
   height: number;
   timelineWidth: number;
+  timezone?: string;
 };
 
 type GetHeaderIntervalsParams = {
@@ -107,17 +108,24 @@ class CustomHeader<Data> extends React.Component<CustomHeaderProps<Data>, State>
     getLeftOffsetFromDate,
   }) => {
     const intervals: Interval[] = [];
-    iterateTimes(canvasTimeStart, canvasTimeEnd, unit, timeSteps, (startTime, endTime) => {
-      const left = getLeftOffsetFromDate(startTime.valueOf());
-      const right = getLeftOffsetFromDate(endTime.valueOf());
-      const width = right - left;
-      intervals.push({
-        startTime,
-        endTime,
-        labelWidth: width,
-        left,
-      });
-    });
+    iterateTimes(
+      canvasTimeStart,
+      canvasTimeEnd,
+      unit,
+      timeSteps,
+      (startTime, endTime) => {
+        const left = getLeftOffsetFromDate(startTime.valueOf());
+        const right = getLeftOffsetFromDate(endTime.valueOf());
+        const width = right - left;
+        intervals.push({
+          startTime,
+          endTime,
+          labelWidth: width,
+          left,
+        });
+      },
+      this.props.timezone
+    );
     return intervals;
   };
 
@@ -196,7 +204,7 @@ export type CustomHeaderWrapperProps<Data> = {
 };
 
 function CustomHeaderWrapper<Data>({ children, unit, headerData, height }: CustomHeaderWrapperProps<Data>) {
-  const { getTimelineState, showPeriod, getLeftOffsetFromDate } = useTimelineState();
+  const { getTimelineState, showPeriod, getLeftOffsetFromDate, timezone } = useTimelineState();
   const timelineState = getTimelineState();
   const { timeSteps } = useTimelineHeadersContext();
   return (
@@ -209,6 +217,7 @@ function CustomHeaderWrapper<Data>({ children, unit, headerData, height }: Custo
       headerData={headerData}
       getLeftOffsetFromDate={getLeftOffsetFromDate}
       height={height}
+      timezone={timezone}
     />
   );
 }

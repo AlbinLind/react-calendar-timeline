@@ -7,6 +7,7 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 ## Unreleased
 
+* Add optional `timezone` prop to Timeline component for displaying headers and handling interactions in a specific timezone regardless of browser's local timezone. Enables applications to serve users across different timezones or display schedules in a specific timezone. Requires dayjs timezone plugin. Fully backward compatible. Closes #943.
 * Add option to continue scrolling when mouse leaves timeline div.
 
 ## 0.30.0 (beta.18)

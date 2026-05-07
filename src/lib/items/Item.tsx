@@ -3,10 +3,10 @@ import {
   createRef,
   CSSProperties,
   HTMLAttributes,
-  LegacyRef,
   MouseEvent,
   MouseEventHandler,
   ReactNode,
+  Ref,
   TouchEvent,
   TouchEventHandler,
 } from "react";
@@ -79,6 +79,7 @@ export type ItemProps<CustomItem extends TimelineItemBase<number>> = {
   groupTops: number[];
   onItemDoubleClick: (i: Id, e: MouseEvent<HTMLDivElement>) => void;
   scrollRef: HTMLElement | null;
+  timezone?: string;
   scrollOffset: number;
 };
 
@@ -110,11 +111,11 @@ export interface ItemRendererProps<CustomItem extends TimelineItemBase<number>> 
   itemContext: ItemContext;
   getItemProps: (
     params: GetItemPropsParams
-  ) => HTMLAttributes<HTMLDivElement> & { key: string; ref: LegacyRef<HTMLDivElement> };
+  ) => HTMLAttributes<HTMLDivElement> & { key: string; ref: Ref<HTMLDivElement> };
   getResizeProps: GetResizeProps;
 }
 type GetResizePropsDirection = {
-  ref: LegacyRef<HTMLDivElement>;
+  ref: Ref<HTMLDivElement>;
   className: string;
   style: CSSProperties;
 };
@@ -207,9 +208,13 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
   }
 
   dragTimeSnap(dragTime: number, considerOffset?: boolean) {
-    const { dragSnap } = this.props;
+    const { dragSnap, timezone } = this.props;
     if (dragSnap) {
-      const offset = considerOffset ? dayjs().utcOffset() * 60 * 1000 : 0;
+      const offset = considerOffset
+        ? timezone
+          ? dayjs().tz(timezone).utcOffset() * 60 * 1000
+          : dayjs().utcOffset() * 60 * 1000
+        : 0;
       return Math.round(dragTime / dragSnap) * dragSnap - (offset % dragSnap);
     } else {
       return dragTime;

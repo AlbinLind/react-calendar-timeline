@@ -41,11 +41,23 @@ import { ItemDimension } from "./types/dimension";
 import dayjs, { Dayjs } from "dayjs";
 import { ItemProps, ResizeEdge } from "./items/Item";
 // import './Timeline.scss'
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 
 dayjs.extend(localizedFormat);
 dayjs.extend(advancedFormat);
+
+// Conditionally extend timezone plugin only when needed
+let isTimezonePluginExtended = false;
+function ensureTimezonePlugin() {
+  if (!isTimezonePluginExtended) {
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
+    isTimezonePluginExtended = true;
+  }
+}
 
 export interface ReactCalendarTimelineRef {
   // Add any methods or properties you want to expose
@@ -136,6 +148,7 @@ export type ReactCalendarTimelineProps<
   className?: string;
   style?: React.CSSProperties;
   ref?: React.Ref<ReactCalendarTimelineRef>;
+  timezone?: string;
 };
 
 export type ReactCalendarTimelineState<
@@ -171,6 +184,10 @@ export default class ReactCalendarTimeline<
   ReactCalendarTimelineState<CustomItem, CustomGroup>
 > {
   static setDayjsLocale = dayjs.locale;
+  static setDayjsTimezone = (tz: string) => {
+    ensureTimezonePlugin();
+    dayjs.tz.setDefault(tz);
+  };
   public static defaultProps = {
     sidebarWidth: 150,
     rightSidebarWidth: 0,
@@ -242,6 +259,8 @@ export default class ReactCalendarTimeline<
     children: null,
 
     selected: null,
+
+    timezone: undefined,
   };
 
   getTimelineContext = (): TimelineContext => {
@@ -345,6 +364,19 @@ export default class ReactCalendarTimeline<
   componentDidMount() {
     this.resize(this.props);
     windowResizeDetector.addListener(this, this.container.current);
+
+    // Validate timezone prop
+    if (this.props.timezone) {
+      try {
+        ensureTimezonePlugin();
+        dayjs().tz(this.props.timezone); // Test if timezone is valid
+      } catch {
+        console.warn(
+          `[react-calendar-timeline] Invalid timezone "${this.props.timezone}". ` +
+            `Falling back to browser timezone. Valid examples: "America/New_York", "UTC", "Europe/London"`
+        );
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -808,6 +840,7 @@ export default class ReactCalendarTimeline<
         itemRenderer={this.props.itemRenderer}
         selected={this.props.selected}
         scrollRef={this.scrollComponent}
+        timezone={this.props.timezone}
         scrollOffset={scrollOffset}
       />
     );
@@ -973,7 +1006,9 @@ export default class ReactCalendarTimeline<
 
     if (!this.props.dragSnap) return { time: dragTime, groupIndex: groupDelta };
 
-    const consideredOffset = dayjs().utcOffset() * 60 * 1000;
+    const consideredOffset = this.props.timezone
+      ? (ensureTimezonePlugin(), dayjs().tz(this.props.timezone).utcOffset() * 60 * 1000)
+      : dayjs().utcOffset() * 60 * 1000;
     return {
       time: Math.round(dragTime / this.props.dragSnap) * this.props.dragSnap - (consideredOffset % this.props.dragSnap),
       groupIndex: groupDelta,
@@ -1032,6 +1067,7 @@ export default class ReactCalendarTimeline<
         showPeriod={this.showPeriod}
         timelineUnit={minUnit}
         timelineWidth={this.state.width}
+        timezone={this.props.timezone}
       >
         <TimelineMarkersProvider>
           <TimelineHeadersProvider
