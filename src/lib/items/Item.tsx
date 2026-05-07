@@ -76,7 +76,7 @@ export type ItemProps<CustomItem extends TimelineItemBase<number>> = {
 
   onSelect: OnSelect;
   onContextMenu?: (i: Id, e: MouseEvent<HTMLDivElement>) => void;
-  groupTops: any;
+  groupTops: number[];
   onItemDoubleClick: (i: Id, e: MouseEvent<HTMLDivElement>) => void;
   scrollRef: HTMLElement | null;
   timezone?: string;
