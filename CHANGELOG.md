@@ -8,6 +8,39 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 ## Unreleased
 
 * Add optional `timezone` prop to Timeline component for displaying headers and handling interactions in a specific timezone regardless of browser's local timezone. Enables applications to serve users across different timezones or display schedules in a specific timezone. Requires dayjs timezone plugin. Fully backward compatible. Closes #943.
+* Add option to continue scrolling when mouse leaves timeline div.
+
+## 0.30.0 (beta.18)
+
+* Migrate test suite from Jest/Enzyme to Vitest + React Testing Library.
+* Convert all test files from JavaScript to TypeScript with full type coverage.
+* Add comprehensive test coverage for all major components and utilities, converting remaining placeholder tests to real implementations.
+* Fix all TypeScript errors across test files and fixtures; remove unnecessary `any` types from source files.
+* Separate `tsconfig.json` (build) from `tsconfig.test.json` (test type-checking); add `__tests__/tsconfig.json` for VS Code language service path alias resolution.
+* Set up Prettier with a pre-commit hook (`lint-staged`) and reformat the entire codebase.
+* Add `@vitest/eslint-plugin` for test file globals; switch to ESLint legacy-recommended config for v8 compatibility; remove Jest ESLint plugin.
+* Add test coverage reporting to CI; update CI workflow to run Vitest.
+
+## 0.30.0 (beta.17)
+
+* Fix vertical page scroll being hijacked by horizontal timeline panning on trackpads
+
+## 0.30.0 (beta.16)
+
+* Fix timeline markers (TodayMarker, CursorMarker, CustomMarker) becoming invisible after the CSS transform scroll change. The inner transform wrapper had 0 height because MarkerCanvas is `position: absolute`, causing all markers with `top:0; bottom:0` to collapse.
+
+## 0.30.0 (beta.15)
+
+* Fix Safari trackpad scroll jank by replacing native `scrollLeft` with CSS `transform: translateX()` so the browser never owns the scroll position. Eliminates the feedback loop where Safari's momentum engine fights programmatic `scrollLeft` writes in `componentDidUpdate`.
+* Batch scroll events via `requestAnimationFrame` to coalesce multiple wheel/pointer events into a single `onScroll` → `onTimeChange` → canvas recalculation cycle per frame, reducing redundant `onBoundsChange` calls.
+* Compute `scrollOffset` once per render instead of calling `getScrollOffset()` multiple times.
+
+## 0.30.0 (beta.14)
+
+* Fix stale `itemContext.title` in custom `itemRenderer` — replaced mutable cache (`cacheDataFromProps`) with getters that derive values directly from current props. Closes #1014.
+* Add `advancedFormat` dayjs plugin to restore support for ordinal date tokens (`Do`, `Q`, `k`, etc.) lost in the Moment.js → Day.js migration. Closes #1011.
+* Fix `getItemProps` silently dropping custom event handlers (`onClick`, `onMouseEnter`, `onMouseLeave`, etc.) and HTML attributes (`data-*`, `aria-*`) passed by custom `itemRenderer`. Unhandled props are now forwarded via rest spread. Closes #970.
+* Remove blanket `preventDefault()` from `composeEvents` — internal handlers already call it conditionally where needed.
 * Fix crash in `getSumScroll` when a node has no `parentNode` before reaching `document.body`.
 * Fix incorrect zoom scale calculation in `handleWheelZoom` — zoom in and zoom out are now symmetric, preventing over-zooming on ctrl+scroll especially at higher speeds.
 * Fix timeline panning triggering when clicking or dragging a selected item. Native `pointerdown`/`pointerup` listeners on the item element now set `isItemInteraction` synchronously before `ScrollElement`'s handler runs, eliminating the race condition with interact.js `dragstart`.
