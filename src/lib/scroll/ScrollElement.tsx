@@ -183,10 +183,9 @@ class ScrollElement extends Component<Props, State> {
       this.lastTouchDistance = null;
       this.singleTouchStart = { x: e.clientX, y: e.clientY, screenY: window.scrollY };
       this.lastSingleTouch = { x: e.clientX, y: e.clientY, screenY: window.scrollY };
-    } else {
+    } else if (this.singleTouchStart) {
       e.preventDefault();
-      this.lastTouchDistance = Math.abs(e.clientX - this.singleTouchStart!.x);
-      this.singleTouchStart = null;
+      this.lastTouchDistance = Math.abs(e.clientX - this.singleTouchStart.x);
       this.lastSingleTouch = null;
     }
   };
@@ -197,11 +196,11 @@ class ScrollElement extends Component<Props, State> {
       e.preventDefault();
       return;
     }
-    if (this.lastTouchDistance && !e.isPrimary) {
+    if (this.lastTouchDistance && !e.isPrimary && this.singleTouchStart) {
       e.preventDefault();
-      const touchDistance = Math.abs(e.clientX - this.singleTouchStart!.x);
+      const touchDistance = Math.abs(e.clientX - this.singleTouchStart.x);
       const parentPosition = getParentPosition(e.currentTarget as HTMLElement);
-      const xPosition = (e.clientX + this.singleTouchStart!.x) / 2 - parentPosition.x;
+      const xPosition = (e.clientX + this.singleTouchStart.x) / 2 - parentPosition.x;
       if (touchDistance !== 0 && this.lastTouchDistance !== 0) {
         onZoom(this.lastTouchDistance / touchDistance, xPosition / width);
         this.lastTouchDistance = touchDistance;
@@ -228,6 +227,7 @@ class ScrollElement extends Component<Props, State> {
   handleTouchEnd = () => {
     if (this.lastTouchDistance) {
       this.lastTouchDistance = null;
+      this.singleTouchStart = null;
     }
     if (this.lastSingleTouch) {
       this.lastSingleTouch = null;
