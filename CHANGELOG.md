@@ -9,6 +9,10 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 * Add option to continue scrolling when mouse leaves timeline div.
 
+## 0.30.0 (beta.19)
+
+* Fix crash (`Cannot read properties of null (reading 'x')`) during two-finger pinch-zoom on touch devices in ScrollElement.
+
 ## 0.30.0 (beta.18)
 
 * Migrate test suite from Jest/Enzyme to Vitest + React Testing Library.
