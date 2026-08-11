@@ -1,7 +1,7 @@
 {
   "name": "dash-react-calendar-timeline",
-  "version": "0.30.0-rc.2",
-  "description": "for of react-calendar-timeline",
+  "version": "0.30.0-rc.3",
+  "description": "Fork of react-calendar-timeline",
   "packageManager": "npm@10.1.0",
   "scripts": {
     "build": "npm run clean && tsc && vite build",
