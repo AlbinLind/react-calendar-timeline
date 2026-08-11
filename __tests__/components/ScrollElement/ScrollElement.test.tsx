@@ -292,4 +292,55 @@ describe("ScrollElement", () => {
 
     rafSpy.mockRestore();
   });
+
+  it("does not throw on the first pinch-zoom move after the second finger lands", () => {
+    const onZoomMock = vi.fn();
+    const { getByTestId } = render(
+      <ScrollElement {...defaultProps} onZoom={onZoomMock}>
+        <div />
+      </ScrollElement>
+    );
+
+    const scrollEl = getByTestId("scroll-element");
+
+    act(() => {
+      scrollEl.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          clientX: 100,
+          clientY: 200,
+          pointerType: "touch",
+          isPrimary: true,
+          bubbles: true,
+        })
+      );
+      scrollEl.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          clientX: 300,
+          clientY: 200,
+          pointerType: "touch",
+          isPrimary: false,
+          bubbles: true,
+        })
+      );
+    });
+
+    expect(() => {
+      act(() => {
+        scrollEl.dispatchEvent(
+          new PointerEvent("pointermove", {
+            clientX: 350,
+            clientY: 200,
+            pointerType: "touch",
+            isPrimary: false,
+            bubbles: true,
+          })
+        );
+      });
+    }).not.toThrow();
+
+    expect(onZoomMock).toHaveBeenCalledTimes(1);
+    const [scale, xRatio] = onZoomMock.mock.calls[0];
+    expect(scale).toBe(0.8);
+    expect(Number.isFinite(xRatio)).toBe(true);
+  });
 });
