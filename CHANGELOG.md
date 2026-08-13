@@ -7,6 +7,7 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 ## Unreleased
 
+* Fix clicks on items/rows being swallowed when the mouse moves slightly between press and release. The scroll element no longer acquires pointer capture on the first `pointermove`; capture is only taken once a canvas pan has actually started, and panning now respects `clickTolerance` before it engages.
 ## 0.30.0 (rc-2)
 
 * Add optional `timezone` prop to Timeline component for displaying headers and handling interactions in a specific timezone regardless of browser's local timezone. Enables applications to serve users across different timezones or display schedules in a specific timezone. Requires dayjs timezone plugin. Fully backward compatible. Closes #943.
