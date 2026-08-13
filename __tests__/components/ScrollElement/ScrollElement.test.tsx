@@ -26,6 +26,7 @@ const defaultProps = {
   scrollRef: noop,
   isInteractingWithItem: false,
   scrollOffset: 0,
+  clickTolerance: 3,
 };
 
 describe("ScrollElement", () => {
@@ -83,6 +84,107 @@ describe("ScrollElement", () => {
     // scrollOffset (0) + dragLastPosition (100) - pageX (50) = 50
     expect(onScrollMock).toHaveBeenCalledWith(50);
 
+    rafSpy.mockRestore();
+  });
+
+  it("does not pan while the pointer stays within clickTolerance of the press position", () => {
+    const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const onScrollMock = vi.fn();
+    const { getByTestId } = render(
+      <ScrollElement {...defaultProps} onScroll={onScrollMock}>
+        <div />
+      </ScrollElement>
+    );
+
+    const scrollEl = getByTestId("scroll-element");
+
+    // Press at 100 and jiggle within clickTolerance (3px) — must not pan.
+    act(() => {
+      scrollEl.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 100, button: 0, pointerType: "mouse", bubbles: true })
+      );
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 101, pointerType: "mouse", bubbles: true }));
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 99, pointerType: "mouse", bubbles: true }));
+    });
+
+    expect(onScrollMock).not.toHaveBeenCalled();
+
+    rafSpy.mockRestore();
+  });
+
+  it("starts panning once movement exceeds clickTolerance", () => {
+    const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const onScrollMock = vi.fn();
+    const { getByTestId } = render(
+      <ScrollElement {...defaultProps} onScroll={onScrollMock}>
+        <div />
+      </ScrollElement>
+    );
+
+    const scrollEl = getByTestId("scroll-element");
+
+    act(() => {
+      scrollEl.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 100, button: 0, pointerType: "mouse", bubbles: true })
+      );
+      // Within tolerance — nothing yet.
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 102, pointerType: "mouse", bubbles: true }));
+      // Beyond tolerance — pan starts, catching up to the pointer.
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 90, pointerType: "mouse", bubbles: true }));
+    });
+
+    expect(onScrollMock).toHaveBeenCalledTimes(1);
+    // scrollOffset (0) + dragLastPosition (100) - pageX (90) = 10
+    expect(onScrollMock).toHaveBeenCalledWith(10);
+
+    rafSpy.mockRestore();
+  });
+
+  it("only captures the pointer once panning has actually started", () => {
+    const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const onScrollMock = vi.fn();
+    const { getByTestId } = render(
+      <ScrollElement {...defaultProps} onScroll={onScrollMock} continueDragOnMouseLeave={true}>
+        <div />
+      </ScrollElement>
+    );
+
+    const scrollEl = getByTestId("scroll-element");
+    // jsdom does not implement setPointerCapture
+    Object.defineProperty(scrollEl, "setPointerCapture", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    const captureSpy = vi.spyOn(scrollEl, "setPointerCapture");
+
+    act(() => {
+      scrollEl.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 100, button: 0, pointerType: "mouse", bubbles: true })
+      );
+      // Slight movement within clickTolerance: a click must not be swallowed.
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 99, pointerType: "mouse", bubbles: true }));
+    });
+    expect(captureSpy).not.toHaveBeenCalled();
+    expect(onScrollMock).not.toHaveBeenCalled();
+
+    // Once the gesture becomes a pan, capture kicks in for drag-on-leave.
+    act(() => {
+      scrollEl.dispatchEvent(new PointerEvent("pointermove", { clientX: 80, pointerType: "mouse", bubbles: true }));
+    });
+    expect(captureSpy).toHaveBeenCalledTimes(1);
+    expect(captureSpy).toHaveBeenCalledWith(1);
+    expect(onScrollMock).toHaveBeenCalledTimes(1);
+
+    captureSpy.mockRestore();
     rafSpy.mockRestore();
   });
 

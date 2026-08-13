@@ -1094,6 +1094,7 @@ export default class ReactCalendarTimeline<
                   traditionalZoom={!!traditionalZoom}
                   onScroll={this.onScroll}
                   scrollOffset={scrollOffset}
+                  clickTolerance={this.props.clickTolerance}
                   continueDragOnMouseLeave={this.props.continueDragOnMouseLeave}
                 >
                   <MarkerCanvas>

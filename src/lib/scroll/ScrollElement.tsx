@@ -11,6 +11,7 @@ type Props = {
   onWheelZoom: (speed: number, xPosition: number, deltaY: number) => void;
   onScroll: (n: number) => void;
   scrollOffset: number;
+  clickTolerance?: number;
   continueDragOnMouseLeave?: boolean;
 };
 
@@ -21,6 +22,19 @@ type State = {
 class ScrollElement extends Component<Props, State> {
   scrollComponentRef = createRef<HTMLDivElement>();
   private dragLastPosition: number | null = null;
+  /**
+   * Pointer position (pageX) where the current mouse press started.
+   * Used together with `clickTolerance` to decide whether the gesture is a
+   * click (no pan) or a drag (pan), so clicks with slight mouse movement
+   * are not swallowed.
+   */
+  private dragStartPosition: number | null = null;
+  /**
+   * True once the mouse press has been classified as a canvas pan (moved
+   * beyond `clickTolerance`). Mirrors the async `isDragging` state with a
+   * synchronous flag, since the latter is only updated on re-render.
+   */
+  private panning: boolean = false;
   private lastTouchDistance: number | null = null;
   private singleTouchStart: { x: number; y: number; screenY: number } | null = null;
   private lastSingleTouch: { x: number; y: number; screenY: number } | null = null;
@@ -78,7 +92,14 @@ class ScrollElement extends Component<Props, State> {
     } else if (e.pointerType === "mouse") {
       this.handleMouseMove(e);
     }
-    if (this.props.continueDragOnMouseLeave) {
+    // Only acquire pointer capture once a canvas pan is actually in progress.
+    // Capturing on the first pointermove retargets the pointer events and the
+    // compatibility mouse events (incl. mouseup/click) to this element, so a
+    // click on an item or row is silently swallowed as soon as the mouse moves
+    // even 1px between press and release. `continueDragOnMouseLeave` only needs
+    // capture once the pan has started, so the pointer leaving the scroll area
+    // keeps the drag alive.
+    if (this.props.continueDragOnMouseLeave && this.panning && this.dragLastPosition !== null) {
       this.scrollComponentRef.current?.setPointerCapture(e.pointerId);
     }
   };
@@ -150,12 +171,25 @@ class ScrollElement extends Component<Props, State> {
   handleMouseDown = (e: PointerEvent) => {
     if (e.button === 0 && !this.isItemInteraction) {
       this.dragLastPosition = e.pageX;
+      this.dragStartPosition = e.pageX;
+      this.panning = false;
     }
   };
 
   handleMouseMove = (e: PointerEvent) => {
     //why is interacting with item important?
     if (this.dragLastPosition !== null) {
+      // Don't start panning until the pointer has moved more than
+      // clickTolerance px from where the press started. Within the tolerance
+      // the gesture is still a potential click, so the timeline must not move
+      // (and the click must not be swallowed by pointer capture below).
+      if (!this.panning) {
+        const startX = this.dragStartPosition ?? this.dragLastPosition;
+        if (Math.abs(e.pageX - startX) <= (this.props.clickTolerance ?? 3)) {
+          return;
+        }
+        this.panning = true;
+      }
       if (!this.state.isDragging) {
         this.setState({ isDragging: true });
       }
@@ -166,6 +200,8 @@ class ScrollElement extends Component<Props, State> {
 
   handleMouseUp = () => {
     this.dragLastPosition = null;
+    this.dragStartPosition = null;
+    this.panning = false;
 
     this.setState({
       isDragging: false,
@@ -175,6 +211,8 @@ class ScrollElement extends Component<Props, State> {
   handlePointerLeave = (e: PointerEvent) => {
     if (e.pointerType === "mouse" && !this.props.continueDragOnMouseLeave) {
       this.dragLastPosition = null;
+      this.dragStartPosition = null;
+      this.panning = false;
       this.setState({
         isDragging: false,
       });
