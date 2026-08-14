@@ -134,6 +134,8 @@ export interface TimelineTimeSteps {
   minute: number;
   hour: number;
   day: number;
+  week: number;
+  isoWeek: number;
   month: number;
   year: number;
 }

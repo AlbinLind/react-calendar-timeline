@@ -14,8 +14,12 @@ describe("getNextUnit", () => {
     const result = getNextUnit("hour");
     expect(result).toBe("day");
   });
-  it("day to month", () => {
+  it("day to isoWeek", () => {
     const result = getNextUnit("day");
+    expect(result).toBe("isoWeek");
+  });
+  it("isoWeek to month", () => {
+    const result = getNextUnit("isoWeek");
     expect(result).toBe("month");
   });
   it("month to year", () => {

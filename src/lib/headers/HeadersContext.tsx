@@ -15,7 +15,7 @@ const defaultContextState: {
   },
   rightSidebarWidth: 0,
   leftSidebarWidth: 150,
-  timeSteps: { second: 1, minute: 1, hour: 1, day: 1, month: 1, year: 1 },
+  timeSteps: { second: 1, minute: 1, hour: 1, day: 1, week: 1, isoWeek: 1, month: 1, year: 1 },
   scrollOffset: 0,
 };
 

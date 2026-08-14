@@ -7,6 +7,8 @@ describe("iterateTimes", () => {
     minute: 1,
     hour: 1,
     day: 1,
+    week: 1,
+    isoWeek: 1,
     month: 1,
     year: 1,
   };
@@ -49,6 +51,22 @@ describe("iterateTimes", () => {
     });
 
     expect(hours).toEqual([0, 2, 4]);
+  });
+
+  it("iterates over isoWeeks starting on Mondays", () => {
+    const start = dayjs("2024-01-10").valueOf(); // a Wednesday
+    const end = dayjs("2024-01-31").valueOf();
+    const intervals: Array<{ start: string; end: string }> = [];
+
+    iterateTimes(start, end, "isoWeek", defaultTimeSteps, (time, nextTime) => {
+      intervals.push({ start: time.format("YYYY-MM-DD ddd"), end: nextTime.format("YYYY-MM-DD ddd") });
+    });
+
+    expect(intervals[0].start).toBe("2024-01-08 Mon");
+    expect(intervals[0].end).toBe("2024-01-15 Mon");
+    expect(intervals[1].start).toBe("2024-01-15 Mon");
+    expect(intervals[2].start).toBe("2024-01-22 Mon");
+    expect(intervals[3].start).toBe("2024-01-29 Mon");
   });
 
   it("iterates over months", () => {

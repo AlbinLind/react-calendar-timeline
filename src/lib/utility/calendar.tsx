@@ -2,6 +2,8 @@
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import isoWeek from "dayjs/plugin/isoWeek";
+import weekOfYear from "dayjs/plugin/weekOfYear";
 import { _get } from "./generic";
 import { Dimension, ItemDimension } from "../types/dimension";
 import {
@@ -16,12 +18,16 @@ import {
 } from "../types/main";
 import { ReactCalendarTimelineProps, ReactCalendarTimelineState } from "../Timeline";
 
-// Ensure timezone plugins are extended only once
+// Ensure plugins are extended only once. isoWeek provides startOf/endOf("isoWeek")
+// and isoWeek(); weekOfYear provides week() — both are used by the week/isoWeek
+// units in iterateTimes/getMinUnit and by the advancedFormat "w"/"W" tokens.
 let pluginsExtended = false;
 function ensurePlugins() {
   if (!pluginsExtended) {
     dayjs.extend(utc);
     dayjs.extend(timezone);
+    dayjs.extend(isoWeek);
+    dayjs.extend(weekOfYear);
     pluginsExtended = true;
   }
 }
@@ -31,8 +37,8 @@ function ensurePlugins() {
  * Falls back to browser timezone if no timezone specified
  */
 export function createDayjsInTimezone(date: number | Dayjs, tz?: string): Dayjs {
+  ensurePlugins();
   if (tz) {
-    ensurePlugins();
     return dayjs(date).tz(tz);
   }
   return dayjs(date);
@@ -102,18 +108,23 @@ export function iterateTimes(
 ) {
   let time = createDayjsInTimezone(start, timezone).startOf(unit);
 
-  if (timeSteps[unit] && timeSteps[unit] > 1) {
+  // dayjs only supports the "isoWeek" unit in startOf/endOf (via the isoWeek
+  // plugin); its add()/get()/set() methods don't know the unit, so use the
+  // equivalent 7-day "week" unit for the arithmetic.
+  const addUnit: keyof TimelineTimeSteps = unit === "isoWeek" ? "week" : unit;
+
+  if (unit !== "week" && unit !== "isoWeek" && timeSteps[unit] && timeSteps[unit] > 1) {
     const value = time.get(unit);
     time = time.set(unit, value - (value % timeSteps[unit]));
   }
 
   while (time.valueOf() < end) {
     let nextTime = createDayjsInTimezone(time, timezone)
-      .add(timeSteps[unit] || 1, unit)
+      .add(timeSteps[unit] || 1, addUnit)
       .startOf(unit);
 
     if (nextTime.valueOf() <= time.valueOf()) {
-      nextTime = nextTime.add(timeSteps[unit] || 1, unit);
+      nextTime = nextTime.add(timeSteps[unit] || 1, addUnit);
     }
 
     callback(time, nextTime);
@@ -148,6 +159,8 @@ export function getMinUnit(zoom: number, width: number, timeSteps: TimelineTimeS
     minute: 60,
     hour: 60,
     day: 24,
+    isoWeek: 7,
+    week: 7,
     month: 30,
     year: 12,
   };
@@ -188,14 +201,16 @@ export function getMinUnit(zoom: number, width: number, timeSteps: TimelineTimeS
   return minUnit;
 }
 
-export type SelectUnits = "second" | "minute" | "hour" | "day" | "month" | "year";
+export type SelectUnits = "second" | "minute" | "hour" | "day" | "week" | "isoWeek" | "month" | "year";
 export type SelectUnitsRes = Exclude<SelectUnits, "second">;
 
 export const NEXT_UNITS: Record<SelectUnits, SelectUnitsRes> = {
   second: "minute",
   minute: "hour",
   hour: "day",
-  day: "month",
+  day: "isoWeek",
+  week: "month",
+  isoWeek: "month",
   month: "year",
   year: "year",
 };

@@ -3,6 +3,7 @@ import React, { Component, FC } from "react";
 import { iterateTimes } from "../utility/calendar";
 import { TimelineStateConsumer } from "../timeline/TimelineStateContext";
 import { TimelineTimeSteps } from "../types/main";
+import { UnitType } from "dayjs";
 
 type WrapperColumnsProps = {
   canvasTimeStart: number;
@@ -57,7 +58,10 @@ class Columns extends Component<ColumnsProps> {
       minUnit,
       timeSteps,
       (time, nextTime) => {
-        const minUnitValue = time.get(minUnit === "day" ? "date" : minUnit);
+        // dayjs has no get() support for the "isoWeek" unit, so read the ISO
+        // week number directly (isoWeek() is provided by the isoWeek plugin)
+        const minUnitValue =
+          minUnit === "isoWeek" ? time.isoWeek() : time.get(minUnit === "day" ? "date" : (minUnit as UnitType));
         const firstOfType = minUnitValue === (minUnit === "day" ? 1 : 0);
 
         let classNamesForTime: string[] = [];

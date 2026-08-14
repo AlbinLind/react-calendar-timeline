@@ -14,6 +14,7 @@ export { default as CustomHeader } from "./lib/headers/CustomHeader";
 export type { CustomHeaderWrapperProps as CustomHeaderProps } from "./lib/headers/CustomHeader";
 export { default as DateHeader } from "./lib/headers/DateHeader";
 export type { DateHeaderWrapper as DateHeaderProps } from "./lib/headers/DateHeader";
+export { defaultHeaderFormats } from "./lib/default-config";
 export * as calendarUtils from "./lib/utility/calendar";
 export * from "./lib/types/main";
 export * from "./lib/items/Item";

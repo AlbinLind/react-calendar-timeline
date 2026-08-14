@@ -36,11 +36,11 @@ describe("getMinUnit", () => {
 
       expect(result).toBe("day");
     });
-    it("should be month for one year duration", () => {
+    it("should be isoWeek for one year duration", () => {
       const oneYear = 31536000000; // 1 year (~365 days) in ms
       const result = getMinUnit(oneYear, standardWidth, defaultTimeSteps);
 
-      expect(result).toBe("month");
+      expect(result).toBe("isoWeek");
     });
   });
 });

@@ -13,7 +13,7 @@ type GetHeaderData<Data> = (
   style: React.CSSProperties,
   className: string | undefined,
   getLabelFormat: (interval: [Dayjs, Dayjs], unit: keyof typeof defaultHeaderFormats, labelWidth: number) => string,
-  unitProp: UnitType | "primaryHeader" | undefined,
+  unitProp: keyof TimelineTimeSteps | "primaryHeader" | undefined,
   headerData: Data | undefined
 ) => {
   intervalRenderer?: IntervalRenderer<Data>;
