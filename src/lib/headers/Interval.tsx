@@ -1,5 +1,5 @@
 import React, { HTMLAttributes, ReactNode } from "react";
-import { getNextUnit, SelectUnits } from "../utility/calendar";
+import { SelectUnits } from "../utility/calendar";
 import { composeEvents } from "../utility/events";
 import { Dayjs } from "dayjs";
 import { IntervalRenderer, Interval as IntervalType, GetIntervalProps } from "../types/main";
@@ -22,14 +22,13 @@ class Interval<Data> extends React.PureComponent<IntervalProps<Data>> {
   onIntervalClick = () => {
     const { primaryHeader, interval, unit, showPeriod, timezone } = this.props;
     if (primaryHeader) {
-      const nextUnit = getNextUnit(unit);
-      // Preserve timezone when calculating period boundaries
+      // Zoom to the level the primary header displays (its own unit),
       let baseTime = interval.startTime.clone();
       if (timezone) {
         baseTime = baseTime.tz(timezone);
       }
-      const newStartTime = baseTime.startOf(nextUnit);
-      const newEndTime = baseTime.endOf(nextUnit);
+      const newStartTime = baseTime.startOf(unit);
+      const newEndTime = baseTime.endOf(unit);
       showPeriod(newStartTime, newEndTime);
     } else {
       showPeriod(interval.startTime, interval.endTime);
