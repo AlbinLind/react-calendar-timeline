@@ -24,6 +24,8 @@ type ItemsProps<CustomItem extends TimelineItemBase<number>> = {
   canMove?: boolean;
   canResize?: CanResize;
   canSelect?: boolean;
+  dragWithoutSelect?: boolean;
+  selectOnDragStart?: boolean;
   keys: TimelineKeys;
   moveResizeValidator?: ItemProps<CustomItem>["moveResizeValidator"];
   itemSelect: ItemProps<CustomItem>["onSelect"];
@@ -73,7 +75,9 @@ export default class Items<CustomItem extends TimelineItemBase<number>> extends 
       nextProps.canChangeGroup === this.props.canChangeGroup &&
       nextProps.canMove === this.props.canMove &&
       nextProps.canResize === this.props.canResize &&
-      nextProps.canSelect === this.props.canSelect
+      nextProps.canSelect === this.props.canSelect &&
+      nextProps.dragWithoutSelect === this.props.dragWithoutSelect &&
+      nextProps.selectOnDragStart === this.props.selectOnDragStart
     );
   }
 
@@ -120,6 +124,8 @@ export default class Items<CustomItem extends TimelineItemBase<number>> extends 
               canResizeLeft={canResizeLeft(item, this.props.canResize)}
               canResizeRight={canResizeRight(item, this.props.canResize)}
               canSelect={_get(item, "canSelect") !== undefined ? _get(item, "canSelect") : this.props.canSelect}
+              dragWithoutSelect={this.props.dragWithoutSelect}
+              selectOnDragStart={this.props.selectOnDragStart}
               useResizeHandle={this.props.useResizeHandle}
               groupTops={this.props.groupTops}
               canvasTimeStart={this.props.canvasTimeStart}

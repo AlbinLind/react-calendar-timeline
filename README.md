@@ -268,6 +268,14 @@ How many pixels we can drag the background for it to be counted as a click on th
 
 Can items be dragged around? Can be overridden in the `items` array. Defaults to `true`
 
+## dragWithoutSelect
+
+Allow dragging an item that is not selected yet, instead of panning the timeline. When `true`, the first drag on a movable, unselected item moves the item. Defaults to `false`, which preserves the original behaviour of selecting an item before it can be dragged.
+
+## selectOnDragStart
+
+When dragging an unselected item (with `dragWithoutSelect`), select it before moving it. Defaults to `true`. Set to `false` to move an unselected item without selecting it. Only has an effect when `dragWithoutSelect` is `true`.
+
 ## canChangeGroup
 
 Can items be moved between groups? Can be overridden in the `items` array. Defaults to `true`

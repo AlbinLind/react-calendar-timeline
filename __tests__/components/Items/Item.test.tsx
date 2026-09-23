@@ -1,9 +1,23 @@
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent, act } from "@testing-library/react";
 import Item from "lib/items/Item";
 import { TimelineContext, TimelineContextType } from "lib/timeline/TimelineStateContext";
 import { noop } from "test-utility";
 import { SelectUnits } from "lib/utility/calendar";
 import { TimelineContext as TimelineContextValue } from "lib/types/main";
+
+// jsdom does not provide PointerEvent
+class PointerEventPolyfill extends MouseEvent {
+  pointerType: string;
+  pointerId: number;
+  isPrimary: boolean;
+  constructor(type: string, params: PointerEventInit & Record<string, unknown> = {}) {
+    super(type, params);
+    this.pointerType = (params.pointerType as string) || "mouse";
+    this.pointerId = (params.pointerId as number) || 1;
+    this.isPrimary = params.isPrimary !== undefined ? params.isPrimary : true;
+  }
+}
+globalThis.PointerEvent = globalThis.PointerEvent || (PointerEventPolyfill as typeof PointerEvent);
 
 const now = Date.now();
 const oneHour = 1000 * 60 * 60;
@@ -296,6 +310,50 @@ describe("Item", () => {
       });
       const item = container.querySelector(".rct-item") as HTMLElement;
       expect(item.style.borderLeftWidth).toBe("1px");
+    });
+  });
+
+  describe("dragWithoutSelect", () => {
+    const dispatchPointerDown = (container: HTMLElement) => {
+      const handler = vi.fn();
+      container.addEventListener("itemInteraction", handler);
+      act(() => {
+        container.querySelector(".rct-item")!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      });
+      return handler;
+    };
+
+    it("signals item interaction on pointerdown for an unselected movable item", () => {
+      const { container } = renderItem({
+        selected: false,
+        canMove: true,
+        dragWithoutSelect: true,
+      });
+
+      const handler = dispatchPointerDown(container);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect((handler.mock.calls[0][0] as CustomEvent).detail).toEqual({ itemInteraction: true });
+    });
+
+    it("does not signal item interaction when dragWithoutSelect is disabled", () => {
+      const { container } = renderItem({
+        selected: false,
+        canMove: true,
+        dragWithoutSelect: false,
+      });
+
+      expect(dispatchPointerDown(container)).not.toHaveBeenCalled();
+    });
+
+    it("does not signal item interaction when the item cannot move", () => {
+      const { container } = renderItem({
+        selected: false,
+        canMove: false,
+        dragWithoutSelect: true,
+      });
+
+      expect(dispatchPointerDown(container)).not.toHaveBeenCalled();
     });
   });
 });

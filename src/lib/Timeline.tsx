@@ -114,6 +114,17 @@ export type ReactCalendarTimelineProps<
   canResize?: CanResize;
   useResizeHandle?: boolean | undefined;
   canSelect?: boolean;
+  /**
+   * Allow dragging an item that is not selected yet, instead of panning the
+   * timeline. When `true`, the first drag on a movable, unselected item moves
+   * the item. Defaults to `false`.
+   */
+  dragWithoutSelect?: boolean | undefined;
+  /**
+   * When dragging an unselected item (with `dragWithoutSelect`), select it
+   * before moving it. Defaults to `true`.
+   */
+  selectOnDragStart?: boolean | undefined;
   stackItems: boolean;
   traditionalZoom?: boolean | undefined;
   itemTouchSendsClick?: boolean | undefined;
@@ -207,6 +218,8 @@ export default class ReactCalendarTimeline<
     canResize: "right",
     useResizeHandle: false,
     canSelect: true,
+    dragWithoutSelect: false,
+    selectOnDragStart: true,
 
     stackItems: false,
 
@@ -829,6 +842,8 @@ export default class ReactCalendarTimeline<
         canResize={this.props.canResize}
         useResizeHandle={this.props.useResizeHandle}
         canSelect={this.props.canSelect}
+        dragWithoutSelect={this.props.dragWithoutSelect}
+        selectOnDragStart={this.props.selectOnDragStart}
         moveResizeValidator={this.props.moveResizeValidator}
         itemSelect={this.selectItem}
         itemDrag={this.dragItem}

@@ -7,6 +7,8 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 ## Unreleased
 
+* Add `dragWithoutSelect` prop to allow dragging an unselected item immediately instead of panning the timeline. Add `selectOnDragStart` (default `true`) to control whether such a drag also selects the item.
+* Suppress a user supplied `onClick` (from `item.itemProps`) after an item drag, so it only fires on genuine clicks.
 * Fix clicks on items/rows being swallowed when the mouse moves slightly between press and release. The scroll element no longer acquires pointer capture on the first `pointermove`; capture is only taken once a canvas pan has actually started, and panning now respects `clickTolerance` before it engages.
 ## 0.30.0 (rc-2)
 

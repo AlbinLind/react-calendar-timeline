@@ -66,6 +66,16 @@ export type ItemProps<CustomItem extends TimelineItemBase<number>> = {
   canChangeGroup?: boolean;
   canMove?: boolean;
   canSelect?: boolean;
+  /**
+   * Allow dragging this item while it is not selected, instead of panning the
+   * timeline on the first drag.
+   */
+  dragWithoutSelect?: boolean;
+  /**
+   * When a drag starts on an unselected item (with `dragWithoutSelect`), select
+   * the item before moving it. Defaults to `true`.
+   */
+  selectOnDragStart?: boolean;
   dimensions?: ItemContext["dimensions"];
   useResizeHandle?: boolean;
   canResizeLeft: boolean;
@@ -170,6 +180,7 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
   private startedClicking: boolean = false;
   private startedTouching: boolean = false;
   private dragInProgress: boolean = false;
+  private dragMoved: boolean = false;
 
   constructor(props: ItemProps<CustomItem>) {
     super(props);
@@ -310,27 +321,41 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
         enabled: this.props.selected && (this.canResizeLeft() || this.canResizeRight()),
       })
       .draggable({
-        enabled: this.props.selected && this.canMove(),
+        enabled: this.canDrag(),
       })
       .styleCursor(false)
       .on("dragstart", (e) => {
-        if (this.props.selected) {
-          this.dragInProgress = true;
-          const clickTime = this.timeFor(e);
-          this.setState({
-            dragging: true,
-            dragStart: {
-              x: e.pageX,
-              y: e.pageY,
-              offset: this.itemTimeStart! - clickTime,
-            },
-            preDragPosition: { x: e.target.offsetLeft, y: e.target.offsetTop },
-            dragTime: this.itemTimeStart!,
-            dragGroupDelta: 0,
-          });
-        } else {
+        if (!this.canDrag()) {
           return false;
         }
+
+        this.dragMoved = true;
+
+        // When dragging an unselected item, optionally select it first so the
+        // item behaves as if it had been selected before the drag started.
+        if (
+          !this.props.selected &&
+          this.props.dragWithoutSelect &&
+          this.props.selectOnDragStart !== false &&
+          this.props.canSelect &&
+          this.props.onSelect
+        ) {
+          this.props.onSelect(this.itemId!, e.pointerType === "mouse" ? "click" : "touch", e as any);
+        }
+
+        this.dragInProgress = true;
+        const clickTime = this.timeFor(e);
+        this.setState({
+          dragging: true,
+          dragStart: {
+            x: e.pageX,
+            y: e.pageY,
+            offset: this.itemTimeStart! - clickTime,
+          },
+          preDragPosition: { x: e.target.offsetLeft, y: e.target.offsetTop },
+          dragTime: this.itemTimeStart!,
+          dragGroupDelta: 0,
+        });
       })
       .on("dragmove", (e) => {
         if (this.state.dragging) {
@@ -381,6 +406,7 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
       })
       .on("resizestart", (e) => {
         if (this.props.selected) {
+          this.dragMoved = true;
           this.setState({
             resizing: true,
             resizeEdge: null, // we don't know yet
@@ -442,16 +468,34 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
     // Native pointerdown fires on the item element during bubble phase, before the
     // event reaches ScrollElement's div listener. This ensures isItemInteraction is
     // set synchronously before ScrollElement's handleMouseDown runs.
-    // Guard on selected: listeners persist after deselection since mountInteract is
-    // only called once, so we must not fire when the item is no longer selected.
+    // Guard on shouldMountInteract: listeners persist after deselection since
+    // mountInteract is only called once, so we must not fire when the item is no
+    // longer interactive (not selected and not dragWithoutSelect).
     this.itemRef.current!.addEventListener("pointerdown", () => {
-      if (this.props.selected) this.fireInteractEvent(true);
+      this.dragMoved = false;
+      if (this.shouldMountInteract()) this.fireInteractEvent(true);
     });
     // Reset on pointerup to handle clicks that don't become drags or resizes.
     // dragend/resizeend handle the reset for actual interactions.
     this.itemRef.current!.addEventListener("pointerup", () => {
-      if (this.props.selected) this.fireInteractEvent(false);
+      if (this.shouldMountInteract()) this.fireInteractEvent(false);
     });
+    // Browsers fire a click after a drag. Swallow it at the DOM level so custom
+    // item renderers that attach their own `onClick` to the item root (instead of
+    // passing it through `getItemProps`) do not treat the end of a drag as a
+    // click. This runs on the item element before the event can bubble to React's
+    // delegated listener. `dragMoved` is reset on the next pointerdown, so a drag
+    // that never produces a click cannot swallow a later genuine click.
+    this.itemRef.current!.addEventListener(
+      "click",
+      (e) => {
+        if (this.dragMoved) {
+          this.dragMoved = false;
+          e.stopPropagation();
+        }
+      },
+      true
+    );
 
     this.setState({
       interactMounted: true,
@@ -477,6 +521,24 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
   canMove(props = this.props) {
     return !!props.canMove;
   }
+
+  /**
+   * Whether the item should be draggable. Items are draggable when they are
+   * selected, or when `dragWithoutSelect` is enabled (and the item can move).
+   */
+  canDrag(props = this.props) {
+    return this.canMove(props) && (!!props.selected || !!props.dragWithoutSelect);
+  }
+
+  /**
+   * Whether interact should be mounted for this item. This is true for selected
+   * items and, when `dragWithoutSelect` is enabled, for movable unselected items
+   * so the very first drag is captured instead of panning the timeline.
+   */
+  shouldMountInteract(props = this.props) {
+    return !!props.selected || (!!props.dragWithoutSelect && this.canMove(props));
+  }
+
   fireInteractEvent = (itemInteraction: boolean) => {
     if (this.itemRef && this.itemRef.current) {
       const event = new CustomEvent("itemInteraction", {
@@ -489,17 +551,23 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
     }
   };
 
+  componentDidMount() {
+    if (this.itemRef.current && this.shouldMountInteract(this.props) && !this.state.interactMounted) {
+      this.mountInteract();
+    }
+  }
+
   componentDidUpdate(prevProps: ItemProps<CustomItem>) {
     let { interactMounted } = this.state;
-    const couldDrag = prevProps.selected && this.canMove(prevProps);
+    const couldDrag = this.canDrag(prevProps);
     const couldResizeLeft = prevProps.selected && this.canResizeLeft(prevProps);
     const couldResizeRight = prevProps.selected && this.canResizeRight(prevProps);
-    const willBeAbleToDrag = this.props.selected && this.canMove(this.props);
+    const willBeAbleToDrag = this.canDrag(this.props);
     const willBeAbleToResizeLeft = this.props.selected && this.canResizeLeft(this.props);
     const willBeAbleToResizeRight = this.props.selected && this.canResizeRight(this.props);
 
     if (this.itemRef && this.itemRef.current) {
-      if (this.props.selected && !interactMounted) {
+      if (this.shouldMountInteract(this.props) && !interactMounted) {
         this.mountInteract();
         interactMounted = true;
       }
@@ -568,6 +636,23 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
     }
   };
 
+  /**
+   * Wraps a user supplied `onClick` (e.g. from `item.itemProps`) so it is not
+   * fired when the gesture was a drag. `dragstart` only fires once interact's
+   * movement tolerance has been exceeded, and `dragMoved` is reset on the next
+   * pointerdown so a drag that ends without a click cannot swallow a later one.
+   */
+  handleClick =
+    (userOnClick?: MouseEventHandler<HTMLDivElement>): MouseEventHandler<HTMLDivElement> =>
+    (e) => {
+      if (this.dragMoved) {
+        this.dragMoved = false;
+        e.stopPropagation();
+        return;
+      }
+      userOnClick?.(e);
+    };
+
   handleContextMenu: MouseEventHandler<HTMLDivElement> = (e) => {
     if (this.props.onContextMenu) {
       e.preventDefault();
@@ -594,6 +679,7 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
     onTouchEnd,
     onDoubleClick,
     onContextMenu,
+    onClick,
     leftClassName,
     rightClassName,
     leftStyle,
@@ -614,6 +700,7 @@ export default class Item<CustomItem extends TimelineItemBase<number>> extends C
       onTouchEnd: composeEvents(this.onTouchEnd, onTouchEnd),
       onDoubleClick: composeEvents(this.handleDoubleClick, onDoubleClick),
       onContextMenu: composeEvents(this.handleContextMenu, onContextMenu),
+      onClick: this.handleClick(onClick),
       style: Object.assign(
         {},
         this.getItemStyle({ leftClassName, rightClassName, leftStyle, rightStyle, ...rest } as GetItemPropsParams)
