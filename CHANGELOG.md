@@ -7,6 +7,7 @@ and this project adheres (more or less) to [Semantic Versioning](http://semver.o
 
 ## Unreleased
 
+* Speed up headers and columns when `timezone` is `"UTC"` or `"Etc/UTC"` by using dayjs UTC mode instead of the timezone plugin. The plugin calls `toLocaleString` for every interval on every scroll frame, which made panning stutter in Safari. This also fixes UTC hour headers that were mislabelled around the browser's local DST change.
 * Add `dragWithoutSelect` prop to allow dragging an unselected item immediately instead of panning the timeline. Add `selectOnDragStart` (default `true`) to control whether such a drag also selects the item.
 * Suppress a user supplied `onClick` (from `item.itemProps`) after an item drag, so it only fires on genuine clicks.
 * Fix clicks on items/rows being swallowed when the mouse moves slightly between press and release. The scroll element no longer acquires pointer capture on the first `pointermove`; capture is only taken once a canvas pan has actually started, and panning now respects `clickTolerance` before it engages.
