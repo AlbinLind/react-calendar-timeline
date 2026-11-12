@@ -32,12 +32,19 @@ function ensurePlugins() {
   }
 }
 
+const UTC_TIMEZONES = new Set(["UTC", "Etc/UTC"]);
+
 /**
  * Create a dayjs instance in the specified timezone
  * Falls back to browser timezone if no timezone specified
  */
 export function createDayjsInTimezone(date: number | Dayjs, tz?: string): Dayjs {
   ensurePlugins();
+  // `tz()` goes through `toLocaleString` on every call, which is slow in Safari.
+  // The headers call this for every interval on every scroll frame.
+  if (tz && UTC_TIMEZONES.has(tz)) {
+    return dayjs.isDayjs(date) ? date.utc() : dayjs.utc(date);
+  }
   if (tz) {
     return dayjs(date).tz(tz);
   }

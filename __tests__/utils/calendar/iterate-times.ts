@@ -1,4 +1,4 @@
-import { iterateTimes } from "lib/utility/calendar";
+import { createDayjsInTimezone, iterateTimes } from "lib/utility/calendar";
 import dayjs from "dayjs";
 
 describe("iterateTimes", () => {
@@ -106,5 +106,66 @@ describe("iterateTimes", () => {
     expect(intervals[0].end).toBe("2024-01-16 00:00");
     expect(intervals[1].start).toBe("2024-01-16 00:00");
     expect(intervals[1].end).toBe("2024-01-17 00:00");
+  });
+
+  it.each(["hour", "day", "month"] as const)("labels %s intervals in UTC across DST changes", (unit) => {
+    // Spans both 2024 EU DST changes, which a local timezone may observe.
+    const start = Date.UTC(2024, 2, 28, 17, 30);
+    const end = Date.UTC(2024, 10, 2);
+    const intervals: Array<{ end: number; label: string; start: number }> = [];
+
+    iterateTimes(
+      start,
+      end,
+      unit,
+      defaultTimeSteps,
+      (time, nextTime) => {
+        intervals.push({ end: nextTime.valueOf(), label: time.format("YYYY-MM-DDTHH:mm"), start: time.valueOf() });
+      },
+      "UTC"
+    );
+
+    expect(intervals.length).toBeGreaterThan(0);
+    for (const [index, interval] of intervals.entries()) {
+      expect(interval.label).toBe(new Date(interval.start).toISOString().slice(0, 16));
+      if (unit === "hour") expect(interval.end - interval.start).toBe(3_600_000);
+      if (unit === "day") expect(interval.end - interval.start).toBe(86_400_000);
+      if (index > 0) expect(interval.start).toBe(intervals[index - 1].end);
+    }
+  });
+
+  it("gives the same intervals for UTC and Etc/UTC", () => {
+    const start = Date.UTC(2024, 0, 1);
+    const end = Date.UTC(2024, 1, 1);
+    const collect = (timezone: string) => {
+      const starts: number[] = [];
+      iterateTimes(start, end, "day", defaultTimeSteps, (time) => starts.push(time.valueOf()), timezone);
+      return starts;
+    };
+
+    expect(collect("UTC")).toEqual(collect("Etc/UTC"));
+  });
+});
+
+describe("createDayjsInTimezone", () => {
+  it("keeps the instant and reads UTC wall time for UTC", () => {
+    // During the 2024 EU DST change back.
+    const time = Date.UTC(2024, 9, 27, 1, 30);
+    const utc = createDayjsInTimezone(time, "UTC");
+
+    expect(utc.valueOf()).toBe(time);
+    expect(utc.utcOffset()).toBe(0);
+    expect(utc.format("YYYY-MM-DD HH:mm Z")).toBe("2024-10-27 01:30 +00:00");
+    expect(utc.startOf("day").valueOf()).toBe(Date.UTC(2024, 9, 27));
+  });
+
+  it("keeps the locale of a dayjs input", () => {
+    const time = dayjs(Date.UTC(2024, 0, 1)).locale("en");
+    expect(createDayjsInTimezone(time, "UTC").locale()).toBe("en");
+  });
+
+  it("still converts other timezones", () => {
+    const time = Date.UTC(2024, 6, 1, 12);
+    expect(createDayjsInTimezone(time, "Europe/Amsterdam").format("HH:mm")).toBe("14:00");
   });
 });
